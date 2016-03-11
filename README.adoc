@@ -1,0 +1,3 @@
+= Time Table
+
+Application to glean time information from Trello and GitHub
