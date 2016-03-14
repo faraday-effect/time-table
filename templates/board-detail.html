@@ -3,36 +3,55 @@
 {% block title %}{{ board.name }}{% endblock %}
 
 {% block content %}
-<h1>{{ board.name }}</h1>
-<h2>Members</h2>
-<ol>
-    {% for member in board.members %}
-    <li>{{ member.full_name }}</li>
-    {% else %}
-    <li>None</li>
-    {% endfor %}
-</ol>
-
-<h2>Lists</h2>
-
-{% for list in board.lists %}
-<h3>{{ list.name }}</h3>
-<ul>
-    {% for card in list.cards %}
-    <li>{{ card.name }}</li>
-    <ul>
-        {% for time in card.time_entries %}
-        <li>
-            {{ time.time_stamp }}
-            {{ time.person }}
-            {{ time.spent }}/{{ time.estimated }}
-        </li>
+    <h1>{{ board.name }}</h1>
+    <h2>Members</h2>
+    <ol>
+        {% for member in board.members %}
+            <li>{{ member.full_name }}</li>
+        {% else %}
+            <li>None</li>
         {% endfor %}
-    </ul>
-    {% else %}
-    <li>No cards</li>
+    </ol>
+
+    <h2>Lists</h2>
+
+    {% for list in board.lists %}
+        <h3>{{ list.name }}</h3>
+        {% if list.cards %}
+            <table border="1">
+                <thead>
+                <tr>
+                    <th>What</th>
+                    <th>When</th>
+                    <th>Who</th>
+                    <th>Spent</th>
+                    <th>Estimated</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for card in list.cards %}
+                    {% for time in card.time_entries %}
+                        <tr>
+                            {% if loop.first %}
+                                <td rowspan="{{ card.time_entries|length }}">{{ card.name }}</td>
+                            {% endif %}
+                            <td>{{ time.datetime.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ time.person.full_name }}</td>
+                            <td>{{ time.spent }}</td>
+                            <td>{{ time.estimated }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td>{{ card.name }}</td>
+                            <td colspan="4">N/A</td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No Cards</p>
+        {% endif %}
     {% endfor %}
-</ul>
-{% endfor %}
 
 {% endblock %}

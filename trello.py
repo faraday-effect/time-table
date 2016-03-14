@@ -2,6 +2,8 @@ import requests
 import json
 import re
 
+from dateutil import parser
+
 
 class TrelloAPI(object):
     def __init__(self):
@@ -13,7 +15,6 @@ class TrelloAPI(object):
         url = "https://trello.com/1/" + url_path
 
         response = requests.get(url, params=params)
-        print response.request.url
         if response.status_code != 200:
             request = response.request
             raise RuntimeError("{} request {} returned {}".format(request.method,
@@ -95,9 +96,9 @@ class Person(TrelloCollection):
 class TimeEntry(TrelloCollection):
     instance_by_trello_id = {}
 
-    def __init__(self, trello_id, time_stamp, person, who, as_of, spent, estimated, comment, card):
+    def __init__(self, trello_id, datetime, person, who, as_of, spent, estimated, comment, card):
         self.trello_id = trello_id
-        self.time_stamp = time_stamp
+        self.datetime = datetime
         self.person = person
         self.who = who
         self.as_of = as_of
@@ -127,7 +128,7 @@ class TimeEntry(TrelloCollection):
             print "Text '{}' didn't match".format(text)
             return None
 
-        return cls(time_json['id'], time_json['date'], person,
+        return cls(time_json['id'], parser.parse(time_json['date']), person,
                    m.group('who'), m.group('asof'), float(m.group('est')), float(m.group('spent')), m.group('cmt'),
                    card)
 
