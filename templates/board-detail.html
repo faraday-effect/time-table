@@ -2,33 +2,37 @@
 
 {% block title %}{{ board.name }}{% endblock %}
 
+{% macro timestamp(datetime) %}
+    {{ datetime.strftime('%a/%d-%b %I:%M %p') }}
+{% endmacro %}
+
 {% block content %}
     <h1>{{ board.name }}</h1>
-    <h2>Members</h2>
-    {% for member in board.members %}
+    <h2>Time Cards</h2>
+    {% for member in board.members|sort(attribute='last_name') %}
         <h3>{{ member.full_name }}</h3>
         {% if member.time_entries %}
             <table border="1">
                 <thead>
                 <tr>
+                    <td>Date</td>
                     <td>Spent</td>
-                    <td>Estimated</td>
                     <td>Card</td>
                 </tr>
                 </thead>
                 <tbody>
-                {% for time_entry in member.time_entries %}
+                {% for time_entry in member.time_entries|sort(attribute='datetime') %}
                     <tr>
+                        <td>{{ timestamp(time_entry.datetime) }}</td>
                         <td>{{ time_entry.spent }}</td>
-                        <td>{{ time_entry.estimated }}</td>
                         <td>{{ time_entry.card.name }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
                 <tfoot>
                 <tr>
+                    <td></td>
                     <td>{{ member.total_time.spent }}</td>
-                    <td>{{ member.total_time.estimated }}</td>
                     <td>TOTAL</td>
                 </tr>
                 </tfoot>
@@ -42,37 +46,73 @@
     {% for list in board.lists if not list.closed %}
         <h3>{{ list.name }}</h3>
         {% if list.cards %}
-            <table border="1">
-                <thead>
-                <tr>
-                    <th>What</th>
-                    <th>When</th>
-                    <th>Who</th>
-                    <th>Spent</th>
-                    <th>Estimated</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for card in list.cards %}
-                    {% for time in card.time_entries %}
-                        <tr>
-                            {% if loop.first %}
-                                <td rowspan="{{ card.time_entries|length }}">{{ card.name }}</td>
-                            {% endif %}
-                            <td>{{ time.datetime.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ time.person.full_name }}</td>
-                            <td>{{ time.spent }}</td>
-                            <td>{{ time.estimated }}</td>
-                        </tr>
-                    {% else %}
+            {% if list.has_time_logged %}
+                <table border="1">
+                    <thead>
+                    <tr>
+                        <th>What</th>
+                        <th>When</th>
+                        <th>Who</th>
+                        <th>Spent</th>
+                        <th>Estimated</th>
+                        <th>Total Spent</th>
+                        <th>Total Estimated</th>
+                        <th>Remaining</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for card in list.cards %}
+                        {% for time in card.time_entries|sort(attribute='datetime') %}
+                            <tr>
+                                {% set num_entries = card.time_entries|length %}
+                                {% if loop.first %}
+                                    <td rowspan="{{ num_entries }}">{{ card.name }}</td>
+                                {% endif %}
+                                <td>{{ timestamp(time.datetime) }}</td>
+                                <td>{{ time.person.full_name }}</td>
+                                <td>{{ time.spent }}</td>
+                                <td>{{ time.estimated }}</td>
+                                {%  if loop.first %}
+                                    <td rowspan="{{ num_entries }}">{{ card.total_time_spent }}</td>
+                                    <td rowspan="{{ num_entries }}">{{ card.total_time_estimated }}</td>
+                                    <td rowspan="{{ num_entries }}">{{ card.total_time_remaining }}</td>
+                                {% endif %}
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td>{{ card.name }}</td>
+                                <td colspan="7">N/A</td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <td colspan="5">TOTALS</td>
+                        <td>{{ list.total_time_spent }}</td>
+                        <td>{{ list.total_time_estimated }}</td>
+                        <td>{{ list.total_time_remaining }}</td>
+                    </tr>
+                    </tfoot>
+                </table>
+            {% else %} {# No time logged for list #}
+                <p>No time logged for this list</p>
+                <table border="1">
+                    <thead>
+                    <tr>
+                        <th>What</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for card in list.cards %}
                         <tr>
                             <td>{{ card.name }}</td>
-                            <td colspan="4">N/A</td>
                         </tr>
                     {% endfor %}
-                {% endfor %}
-                </tbody>
-            </table>
+                    </tbody>
+
+                </table>
+            {% endif %}
         {% else %}
             <p>No Cards</p>
         {% endif %}

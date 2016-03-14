@@ -62,6 +62,8 @@ class TrelloCollection(object):
 
     @classmethod
     def find(cls, trello_id):
+        if trello_id not in cls.instance_by_trello_id:
+            raise RuntimeError("No {} with ID {}".format(cls, trello_id))
         return cls.instance_by_trello_id[trello_id]
 
     @classmethod
@@ -173,6 +175,22 @@ class Card(TrelloCollection):
     def add_time_entry(self, time_entry):
         self.time_entries.append(time_entry)
 
+    @property
+    def has_time_logged(self):
+        return len(self.time_entries) > 0
+
+    @property
+    def total_time_spent(self):
+        return reduce(lambda total, entry: total + entry.spent, self.time_entries, 0)
+
+    @property
+    def total_time_estimated(self):
+        return reduce(lambda total, entry: total + entry.estimated, self.time_entries, 0)
+
+    @property
+    def total_time_remaining(self):
+        return self.total_time_estimated - self.total_time_spent
+
     def __repr__(self):
         return "<Card '{}' [{}]>".format(self.name,
                                          ', '.join([str(te) for te in self.time_entries]))
@@ -194,6 +212,22 @@ class CardList(TrelloCollection):
 
     def add_card(self, card):
         self.cards.append(card)
+
+    @property
+    def has_time_logged(self):
+        return any([card.has_time_logged for card in self.cards])
+
+    @property
+    def total_time_spent(self):
+        return reduce(lambda total, card: total + card.total_time_spent, self.cards, 0)
+
+    @property
+    def total_time_estimated(self):
+        return reduce(lambda total, card: total + card.total_time_estimated, self.cards, 0)
+
+    @property
+    def total_time_remaining(self):
+        return self.total_time_estimated - self.total_time_spent
 
     def __repr__(self):
         return "<CardList '{}' [{}]>".format(self.name,
@@ -223,22 +257,6 @@ class Board(TrelloCollection):
             if time_entry_json['data']['text'].startswith('plus!'):
                 TimeEntry.from_json(time_entry_json)
         return cls(board_json['id'], board_json['name'], board_json['shortUrl'], members, lists)
-
-    @property
-    def cards(self):
-        """Return a list of all cards for this board."""
-        cards = []
-        for list in self.lists:
-            cards += list.cards
-        return cards
-
-    @property
-    def time_entries(self):
-        """Return a list of all time entries for this board."""
-        time_entries = []
-        for card in self.cards:
-            time_entries += card.time_entries
-        return time_entries
 
     def __repr__(self):
         return "<Board '{}' [{}] [{}]>".format(self.name,
