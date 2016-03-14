@@ -76,18 +76,30 @@ class Person(TrelloCollection):
         self.trello_id = trello_id
         self.first_name = first_name
         self.last_name = last_name
+        self.time_entries = []
         self.add(self)
 
     @classmethod
     def from_json(cls, person_json):
-        names = re.split(r'[_\s]+', person_json['fullName'])
-        first_name = names[0].capitalize()
-        last_name = " ".join(names[1:]).capitalize()
+        names = [name.capitalize() for name in re.split(r'[_\s]+', person_json['fullName'])]
+        first_name = names[0]
+        last_name = " ".join(names[1:])
         return Person(person_json['id'], first_name, last_name)
+
+    def add_time_entry(self, time_entry):
+        self.time_entries.append(time_entry)
 
     @property
     def full_name(self):
         return " ".join([self.first_name, self.last_name])
+
+    @property
+    def total_time(self):
+        spent = estimated = 0
+        for time_entry in self.time_entries:
+            spent += time_entry.spent
+            estimated += time_entry.estimated
+        return {'spent': spent, 'estimated': estimated}
 
     def __repr__(self):
         return "<Person '{} {}'>".format(self.first_name, self.last_name, self.trello_id)
@@ -128,9 +140,11 @@ class TimeEntry(TrelloCollection):
             print "Text '{}' didn't match".format(text)
             return None
 
-        return cls(time_json['id'], parser.parse(time_json['date']), person,
-                   m.group('who'), m.group('asof'), float(m.group('est')), float(m.group('spent')), m.group('cmt'),
-                   card)
+        time_entry = cls(time_json['id'], parser.parse(time_json['date']), person,
+                         m.group('who'), m.group('asof'), float(m.group('est')), float(m.group('spent')), m.group('cmt'),
+                         card)
+        person.add_time_entry(time_entry)
+        return time_entry
 
     def __repr__(self):
         return "<Time '{}' {}/{}>".format(self.person, self.spent, self.estimated)
@@ -167,15 +181,16 @@ class Card(TrelloCollection):
 class CardList(TrelloCollection):
     instance_by_trello_id = {}
 
-    def __init__(self, trello_id, name):
+    def __init__(self, trello_id, name, closed):
         self.trello_id = trello_id
         self.name = name
+        self.closed = closed
         self.cards = []
         self.add(self)
 
     @classmethod
     def from_json(cls, list_json):
-        return cls(list_json['id'], list_json['name'])
+        return cls(list_json['id'], list_json['name'], list_json['closed'])
 
     def add_card(self, card):
         self.cards.append(card)
@@ -208,6 +223,22 @@ class Board(TrelloCollection):
             if time_entry_json['data']['text'].startswith('plus!'):
                 TimeEntry.from_json(time_entry_json)
         return cls(board_json['id'], board_json['name'], board_json['shortUrl'], members, lists)
+
+    @property
+    def cards(self):
+        """Return a list of all cards for this board."""
+        cards = []
+        for list in self.lists:
+            cards += list.cards
+        return cards
+
+    @property
+    def time_entries(self):
+        """Return a list of all time entries for this board."""
+        time_entries = []
+        for card in self.cards:
+            time_entries += card.time_entries
+        return time_entries
 
     def __repr__(self):
         return "<Board '{}' [{}] [{}]>".format(self.name,

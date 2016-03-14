@@ -5,17 +5,41 @@
 {% block content %}
     <h1>{{ board.name }}</h1>
     <h2>Members</h2>
-    <ol>
-        {% for member in board.members %}
-            <li>{{ member.full_name }}</li>
-        {% else %}
-            <li>None</li>
-        {% endfor %}
-    </ol>
+    {% for member in board.members %}
+        <h3>{{ member.full_name }}</h3>
+        {% if member.time_entries %}
+            <table border="1">
+                <thead>
+                <tr>
+                    <td>Spent</td>
+                    <td>Estimated</td>
+                    <td>Card</td>
+                </tr>
+                </thead>
+                <tbody>
+                {% for time_entry in member.time_entries %}
+                    <tr>
+                        <td>{{ time_entry.spent }}</td>
+                        <td>{{ time_entry.estimated }}</td>
+                        <td>{{ time_entry.card.name }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td>{{ member.total_time.spent }}</td>
+                    <td>{{ member.total_time.estimated }}</td>
+                    <td>TOTAL</td>
+                </tr>
+                </tfoot>
+            </table>
+        {% endif %}
+    {% else %}
+        <li>None</li>
+    {% endfor %}
 
     <h2>Lists</h2>
-
-    {% for list in board.lists %}
+    {% for list in board.lists if not list.closed %}
         <h3>{{ list.name }}</h3>
         {% if list.cards %}
             <table border="1">
