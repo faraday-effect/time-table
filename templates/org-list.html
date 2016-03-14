@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}All Orgs{% endblock %}
+
+{% block content %}
+    <h2>All Orgs</h2>
+    <ul>
+        {% for org in orgs %}
+            <li><a href="{{ url_for('org_detail', id=org.name) }}">{{ org.displayname }}</a></li>
+        {% endfor %}
+    </ul>
+{% endblock %}

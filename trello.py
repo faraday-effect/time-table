@@ -141,7 +141,7 @@ class TimeEntry(TrelloCollection):
             return None
 
         time_entry = cls(time_json['id'], parser.parse(time_json['date']), person,
-                         m.group('who'), m.group('asof'), float(m.group('est')), float(m.group('spent')), m.group('cmt'),
+                         m.group('who'), m.group('asof'), float(m.group('spent')), float(m.group('est')), m.group('cmt'),
                          card)
         person.add_time_entry(time_entry)
         return time_entry
