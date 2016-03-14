@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ board.name }}{% endblock %}
+
+{% block content %}
+<h1>{{ board.name }}</h1>
+<h2>Members</h2>
+<ol>
+    {% for member in board.members %}
+    <li>{{ member.full_name }}</li>
+    {% else %}
+    <li>None</li>
+    {% endfor %}
+</ol>
+
+<h2>Lists</h2>
+
+{% for list in board.lists %}
+<h3>{{ list.name }}</h3>
+<ul>
+    {% for card in list.cards %}
+    <li>{{ card.name }}</li>
+    <ul>
+        {% for time in card.time_entries %}
+        <li>
+            {{ time.time_stamp }}
+            {{ time.person }}
+            {{ time.spent }}/{{ time.estimated }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <li>No cards</li>
+    {% endfor %}
+</ul>
+{% endfor %}
+
+{% endblock %}
