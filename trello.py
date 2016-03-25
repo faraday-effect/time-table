@@ -124,7 +124,7 @@ class TimeEntry(TrelloCollection):
         self.add(self)
 
     time_card_re = re.compile(r"""
-                        ^plus!\s
+                        ^plus!\s+
                         (?P<who>[@\w]+)?\s*
                         (?P<asof>-\d+d)?\s*
                         (?P<spent>-?[\d\.]+)/(?P<est>-?[\d\.]+)\s*
@@ -254,8 +254,11 @@ class Board(TrelloCollection):
         for card_json in board_json['cards']:
             Card.from_json(card_json)
         for time_entry_json in board_json['actions']:
-            if time_entry_json['data']['text'].startswith('plus!'):
+            text = time_entry_json['data']['text']
+            if text.startswith('plus!'):
                 TimeEntry.from_json(time_entry_json)
+            else:
+                print "Skipped {}".format(text)
         return cls(board_json['id'], board_json['name'], board_json['shortUrl'], members, lists)
 
     def __repr__(self):
