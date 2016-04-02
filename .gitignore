@@ -1,4 +1,5 @@
 .idea/
 trello-keys.json
 *.sqlite
+*.pyc
 

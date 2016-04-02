@@ -1,15 +1,5 @@
 import os
 
-from views import app
-
-
-def create_db():
-    db.create_all()
-
-
-def drop_db():
-    db.drop_all()
-
 
 class Organization(db.Model):
     id = db.Column(db.String(64), primary_key=True)
