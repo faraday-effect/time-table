@@ -1,3 +1,4 @@
 .idea/
 trello-keys.json
+*.sqlite
 

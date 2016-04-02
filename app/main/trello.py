@@ -22,12 +22,6 @@ class TrelloAPI(object):
                                                                   response.status_code))
         return response.json()
 
-    def get_card(self, card_id):
-        return self.get("card/{}".format(card_id),
-                        params={"actions": "commentCard",
-                                "members": "true",
-                                "fields": "id,dateLastActivity,name"})
-
     def get_organizations(self):
         return self.get("members/my/organizations")
 
@@ -50,6 +44,8 @@ class TrelloAPI(object):
                                 'cards': 'all',
                                 'lists': 'all',
                                 'actions': 'commentCard',
+                                'actions_limit': 1000,
+                                'limit': 1000,
                                 'memberships_member': 'true',
                                 'memberships': 'all',
                                 'memberships_member_fields': 'fullName,username,memberType,initials'})
