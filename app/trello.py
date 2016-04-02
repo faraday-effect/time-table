@@ -23,7 +23,11 @@ class TrelloAPI(object):
         return response.json()
 
     def get_organizations(self):
-        return self.get("members/my/organizations")
+        return self.get("members/my/organizations",
+                        params={'fields': 'id,name,displayName'})
+
+    def get_members_by_organization(self, org_name):
+        return self.get("organizations/{}/members".format(org_name))
 
     def get_boards_by_organization(self, org_name):
         return self.get("organizations/{}/boards".format(org_name),
@@ -33,10 +37,6 @@ class TrelloAPI(object):
         return [ json['id'] for json in self.get("organizations/{}/boards".format(org_name),
                                                  params={'filter': 'open',
                                                          'fields': 'id'}) ]
-
-    def get_members_by_organization(self, org_name):
-        return self.get("organizations/{}".format(org_name),
-                        params={'members': 'all'})
 
     def get_board_details_by_board_id(self, board_id):
         return self.get("boards/{}".format(board_id),

@@ -1,18 +1,8 @@
 from flask import render_template
 
-from app.models import Organization
-from trello import TrelloAPI, Board
 from . import main
-trello = TrelloAPI()
-
-
-@main.route('/fetch')
-def fetch():
-    for org in trello.get_organizations():
-        Organization(id=org['id'],
-                     name=org['name'],
-                     display_name=org['displayName'])
-    return "Fetched orgs"
+from ..models import Organization
+from .. import db
 
 
 @main.route('/')

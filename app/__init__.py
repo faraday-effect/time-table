@@ -13,6 +13,7 @@ def create_app():
     db_path = os.path.join(os.getcwd(), 'time-table.sqlite')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////{}'.format(db_path)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # app.config['SQLALCHEMY_ECHO'] = True
     db.init_app(app)
 
     # Routes and error packages
