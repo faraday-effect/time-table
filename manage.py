@@ -4,7 +4,7 @@ from flask.ext.script import Manager
 
 from app import create_app, db
 from app.trello import TrelloAPI
-from app.models import Organization, Person
+from app.models import Organization, Person, Board
 
 app = create_app()
 manager = Manager(app)
@@ -30,7 +30,7 @@ def refresh_from_trello():
         else:
             print "Org {} exists".format(org.display_name)
 
-        for member_json in trello.get_members_by_organization(org_json['name']):
+        for member_json in trello.get_members_by_organization(org.name):
             member = Person.query.get(member_json['id'])
             if member is None:
                 names = [name.capitalize() for name in re.split(r'[_\s]+', member_json['fullName'])]
@@ -44,6 +44,19 @@ def refresh_from_trello():
                 print "Added person {}".format(member.full_name)
             else:
                 print "Person {} exists".format(member.full_name)
+
+        for board_json in trello.get_boards_by_organization(org.name):
+            board = Board.query.get(board_json['id'])
+            if board is None:
+                board = Board(id=board_json['id'],
+                              name=board_json['name'])
+                db.session.add(board)
+                for member_id in (membership['idMember'] for membership in board_json['memberships']):
+                    member = Person.query.get(member_id)
+                    board.members.append(member)
+                print "Added board {}".format(board.name)
+            else:
+                print "Board {} exists".format(board.name)
     db.session.commit()
 
 
