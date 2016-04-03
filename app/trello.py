@@ -6,6 +6,8 @@ from dateutil import parser
 
 
 class TrelloAPI(object):
+    TRELLO_FETCH_LIMIT = 1000
+
     def __init__(self):
         with open("trello-keys.json", "r") as f:
             self.auth_params = json.load(f)
@@ -29,29 +31,59 @@ class TrelloAPI(object):
     def get_members_by_organization(self, org_name):
         return self.get("organizations/{}/members".format(org_name))
 
-    def get_boards_by_organization(self, org_name):
-        return self.get("organizations/{}/boards".format(org_name),
-                        params={'filter': 'open'})
-
-    def get_member_by_id(self, id):
-        return self.get("members/{}".format(id))
-
     def get_board_ids_by_organization(self, org_name):
-        return [ json['id'] for json in self.get("organizations/{}/boards".format(org_name),
-                                                 params={'filter': 'open',
-                                                         'fields': 'id'}) ]
+        return [board_json['id'] for board_json in self.get("organizations/{}/boards".format(org_name),
+                                                            params={'filter': 'open',
+                                                                    'fields': 'id'})]
 
-    def get_board_details_by_board_id(self, board_id):
+    def get_board_by_id(self, board_id):
         return self.get("boards/{}".format(board_id),
-                        params={'organization': 'true',
-                                'cards': 'all',
-                                'lists': 'all',
-                                'actions': 'commentCard',
-                                'actions_limit': 1000,
-                                'limit': 1000,
-                                'memberships_member': 'true',
-                                'memberships': 'all',
-                                'memberships_member_fields': 'fullName,username,memberType,initials'})
+                        params={'members': 'all',
+                                'lists': 'open'})
+
+    def get_member_by_id(self, member_id):
+        return self.get("members/{}".format(member_id))
+
+    def get_cards_by_list_id(self, list_id):
+        cards = self.get("lists/{}/cards".format(list_id),
+                        params={'fields': 'id,name,desc',
+                                'limit': self.TRELLO_FETCH_LIMIT})
+        self.check_fetch_limit(cards)
+        return cards
+
+    def get_actions_by_list_id(self, list_id, action_filter='commentCard'):
+        actions = self.get("lists/{}/actions".format(list_id),
+                           params={'filter': action_filter,
+                                   'memberCreator': False,
+                                   'limit': 1000})
+        self.check_fetch_limit(actions)
+        return actions
+
+    def get_actions_by_card_id(self, card_id, action_filter='commentCard'):
+        actions = self.get("cards/{}/actions".format(card_id),
+                           params={'filter': action_filter,
+                                   'fields': 'id,data,date',
+                                   'memberCreator_fields': 'id,fullName',
+                                   'limit': 1000})
+        self.check_fetch_limit(actions)
+        return actions
+
+    def check_fetch_limit(self, json_list):
+        if len(json_list) >= self.TRELLO_FETCH_LIMIT:
+            raise RuntimeError("Fetched {} items; might be at Trello's limit".format(self.TRELLO_FETCH_LIMIT))
+
+    #
+    # def get_board_details_by_board_id(self, board_id):
+    #     return self.get("boards/{}".format(board_id),
+    #                     params={'organization': 'true',
+    #                             'cards': 'all',
+    #                             'lists': 'all',
+    #                             'actions': 'commentCard',
+    #                             'actions_limit': 1000,
+    #                             'limit': 1000,
+    #                             'memberships_member': 'true',
+    #                             'memberships': 'all',
+    #                             'memberships_member_fields': 'fullName,username,memberType,initials'})
 
 
 class TrelloCollection(object):

@@ -3,8 +3,10 @@ import os
 from flask import Flask, render_template
 from flask.ext.sqlalchemy import SQLAlchemy
 
-db = SQLAlchemy()
+from .trello import TrelloAPI
 
+db = SQLAlchemy()
+trello = TrelloAPI()
 
 def create_app():
     """Application factory function."""

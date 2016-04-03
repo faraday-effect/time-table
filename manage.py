@@ -1,49 +1,41 @@
 from flask.ext.script import Manager
 
-from app import create_app, db
-from app.trello import TrelloAPI
+from app import create_app, db, trello
 from app.models import Organization, Person, Board
 
 app = create_app()
 manager = Manager(app)
-trello = TrelloAPI()
 
 
 @manager.command
 def rebuild_db():
+    """Rebuild the database from scratch"""
     db.drop_all()
     db.create_all()
 
 
 @manager.command
-def refresh_from_trello():
+def refresh_orgs():
+    """Refresh all organizations from Trello"""
     for org_json in trello.get_organizations():
-        org, created = Organization.get_or_create(id=org_json['id'],
-                                                  name=org_json['name'],
-                                                  display_name=org_json['displayName'])
-        if created:
-            db.session.add(org)
-
-        for member_json in trello.get_members_by_organization(org.name):
-            member, created = Person.get_or_create_json(member_json)
-            if created:
-                db.session.add(member)
-                org.members.append(member)
-
-        for board_json in trello.get_boards_by_organization(org.name):
-            board, created = Board.get_or_create_json(board_json)
-            if created:
-                db.session.add(board)
-
-                for member_id in (membership['idMember'] for membership in board_json['memberships']):
-                    member = Person.query.get(member_id)
-                    if member is None:
-                        member = Person.from_json(trello.get_member_by_id(member_id))
-                        print "FETCHED MEMBER NOT IN ORG {}".format(member)
-                        db.session.add(member)
-                    board.members.append(member)
-                    print "ADDED MEMBER {}".format(member)
+        Organization.get_or_create(org_json)
     db.session.commit()
+
+
+@manager.command
+def refresh_boards():
+    """Refresh from Trello the boards of all organizations"""
+    for org in Organization.query.all():
+        for board_id in trello.get_board_ids_by_organization(org.name):
+            Board.get_or_create(trello.get_board_by_id(board_id))
+    db.session.commit()
+
+
+@manager.command
+def refresh_all():
+    """Refresh everything from Trello"""
+    refresh_orgs()
+    refresh_boards()
 
 
 if __name__ == '__main__':
