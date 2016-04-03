@@ -33,6 +33,9 @@ class TrelloAPI(object):
         return self.get("organizations/{}/boards".format(org_name),
                         params={'filter': 'open'})
 
+    def get_member_by_id(self, id):
+        return self.get("members/{}".format(id))
+
     def get_board_ids_by_organization(self, org_name):
         return [ json['id'] for json in self.get("organizations/{}/boards".format(org_name),
                                                  params={'filter': 'open',
