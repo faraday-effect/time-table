@@ -19,7 +19,7 @@ def refresh_orgs():
     """Refresh all organizations from Trello"""
     for org_json in trello.get_organizations():
         Organization.get_or_create(org_json)
-    db.session.commit()
+        db.session.commit()
 
 
 @manager.command
@@ -28,7 +28,7 @@ def refresh_boards():
     for org in Organization.query.all():
         for board_id in trello.get_board_ids_by_organization(org.name):
             Board.get_or_create(trello.get_board_by_id(board_id))
-    db.session.commit()
+            db.session.commit()
 
 
 @manager.command

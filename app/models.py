@@ -30,6 +30,7 @@ class Person(db.Model, ModelMixin):
     id = db.Column(db.String(64), primary_key=True)
     first_name = db.Column(db.String(64), nullable=False)
     last_name = db.Column(db.String(64), nullable=False)
+    time_entries = db.relationship('TimeEntry', backref='person')
 
     @classmethod
     def from_json(cls, person_json):
@@ -132,10 +133,10 @@ class Card(db.Model, ModelMixin):
 class TimeEntry(db.Model, ModelMixin):
     id = db.Column(db.String(64), primary_key=True)
     datetime = db.Column(db.DateTime())
-    person = db.Column(db.String(64), db.ForeignKey('person.id'))
-    spent = db.Column(db.Numeric(8,2))
-    estimated = db.Column(db.Numeric(8,2))
+    spent = db.Column(db.REAL)
+    estimated = db.Column(db.REAL)
     comment = db.Column(db.String(255))
+    person_id = db.Column(db.String(64), db.ForeignKey('person.id'))
     card_id = db.Column(db.String(64), db.ForeignKey('card.id'))
 
     time_card_re = re.compile(r"""
@@ -148,19 +149,30 @@ class TimeEntry(db.Model, ModelMixin):
 
     @classmethod
     def from_json(cls, time_json):
+        entry_id=time_json['id']
+        entry_datetime=parser.parse(time_json['date'])
+        entry_person=Person.get_or_create(time_json['memberCreator'])
+
         text = time_json['data']['text']
-
         m = cls.time_card_re.match(text)
-        if m is None:
-            raise RuntimeError("Text '{}' didn't match".format(text))
 
-        time_entry = cls(id=time_json['id'],
-                         datetime=parser.parse(time_json['date']),
-                         person=Person.get_or_create(time_json['memberCreator']),
-                         spent=m.group('spent'),
-                         estimated=m.group('est'),
-                         comment=m.group('cmt'))
+        if m is None:
+            print "WARNING: text '{}' didn't match".format(text)
+            time_entry = cls(id=entry_id,
+                             datetime=entry_datetime,
+                             person=entry_person,
+                             spent=0.0,
+                             estimated=0.0,
+                             comment=text)
+        else:
+            time_entry = cls(id=entry_id,
+                             datetime=entry_datetime,
+                             person=entry_person,
+                             spent=float(m.group('spent')),
+                             estimated=float(m.group('est')),
+                             comment=m.group('cmt'))
+        db.session.add(time_entry)
         return time_entry
 
     def __repr__(self):
-        return "<Time '{}' {}/{}>".format(self.person, self.spent, self.estimated)
+        return "<Time '{}' S{}/E{}>".format(self.person.full_name, self.spent, self.estimated)
